@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Colors Clicker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+      <div class="hud">
+        <div id="pfpCircle" class="pfp-circle" title="Cliquer pour changer la PFP"></div>
+        <div id="usernameDisplay" class="username">Invité</div>
+        <div class="coins"><span id="coins">0</span>💰</div>
+        <div class="attack-coins"><span id="attackCoins">0</span>⚔️</div>
+        <div id="boosterBadge" class="booster-badge"></div>
+      </div>
+      <div class="header-buttons">
+        <button id="rankingIcon" class="ranking-icon" title="Classement">🏆</button>
+        <div class="header-separator"></div>
+        <button id="resetIcon" class="header-icon" title="Réinitialiser le compte">🔄</button>
+        <button id="logoutIcon" class="logout-icon" title="Se déconnecter" aria-label="Logout">⎋</button>
+      </div>
+    </header>
+
+    <main class="main-area">
+      <div class="clicker-area">
+        <div id="spinner" class="spinner">
+          <div id="spinnerInner" class="spinner-inner"></div>
+        </div>
+      </div>
+      <button id="megaSpinBtn" class="mega-spin-btn">⚡</button>
+      <div class="info">
+        <p id="lastColorText"><span id="lastColorValue">Aucune</span></p>
+      </div>
+    </main>
+
+    <!-- Side panel -->
+    <aside id="sidePanel" class="side-panel">
+      <nav class="panel-tabs">
+        <button data-tab="collection" class="tab active">Collection</button>
+        <button data-tab="shop" class="tab">Boutique</button>
+      </nav>
+      <section id="tabContent" class="tab-content"></section>
+    </aside>
+
+    <!-- Ranking overlay -->
+    <div id="rankingOverlay" class="ranking-overlay hidden">
+      <div class="ranking-content">
+        <button id="closeRanking" class="close-ranking-btn">✕</button>
+        <div id="rankingContainer"></div>
+      </div>
+    </div>
+
+    <!-- Login modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-inner">
+        <div class="form-left">
+          <h3>Connexion</h3>
+          <input id="loginUser" placeholder="Nom d'utilisateur" />
+          <input id="loginPassword" type="password" placeholder="Mot de passe" />
+          <button id="loginBtn"><span>Connexion</span></button>
+        </div>
+        <div class="form-divider"></div>
+        <div class="form-right">
+          <h3>Créer un compte</h3>
+          <input id="createUser" placeholder="Nom d'utilisateur" />
+          <input id="createPassword" type="password" placeholder="Mot de passe" />
+          <button id="createBtn"><span>Créer</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/js/firebase.js"></script>
+  <script type="module" src="assets/js/names.js"></script>
+  <script type="module" src="assets/js/config.js"></script>
+  <script type="module" src="assets/js/userSystem.js"></script>
+  <script type="module" src="assets/js/animation.js"></script>
+  <script type="module" src="assets/js/ui.js"></script>
+  <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
