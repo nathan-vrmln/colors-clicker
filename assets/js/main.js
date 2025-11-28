@@ -553,8 +553,10 @@ function playWildAnimation(container, color){
     const spark = document.createElement('div');
     spark.style.position = 'fixed';
     spark.style.pointerEvents = 'none';
-    spark.style.left = container.getBoundingClientRect().left + container.offsetWidth/2 + 'px';
-    spark.style.top = container.getBoundingClientRect().top + container.offsetHeight/2 + 'px';
+    const rect = container.getBoundingClientRect();
+    // Compensate for 1.75 scale
+    spark.style.left = (rect.left + rect.width/2) / 1.75 + 'px';
+    spark.style.top = (rect.top + rect.height/2) / 1.75 + 'px';
     spark.style.width = '10px';
     spark.style.height = '10px';
     spark.style.borderRadius = '50%';
@@ -675,3 +677,4 @@ setInterval(checkAttackNotifications, 10000);
 
 // Ensure auth on load
 ensureAuth();
+
