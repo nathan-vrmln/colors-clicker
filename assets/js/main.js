@@ -2,7 +2,7 @@
 // Point d'entrée: assemble animation, user system et UI
 
 import { CONFIG } from './config.js';
-import { initUserSystem, createAccount, login, getCurrentUser, addColorToUser, addCoins, getCurrentMultiplier, cleanupBoosters, resetAccount, setPFP, getCollection, getAttackNotifications } from './userSystem.js';
+import { initUserSystem, createAccount, login, getCurrentUser, addColorToUser, addCoins, getCurrentMultiplier, cleanupBoosters, resetAccount, setPFP, getCollection, getAttackNotifications, checkAutoUnlockZones } from './userSystem.js';
 import { spinSpinner, createBurst } from './animation.js';
 import { updateHUD, updateCoinsDisplay, updateBoosterBadge, togglePanel, setupPanelTabs, renderCollection, renderShop, updatePFPDisplay, renderRanking, renderRankingInto } from './ui.js';
 import { isZoneUnlocked } from './userSystem.js';
@@ -119,8 +119,30 @@ function checkAttackNotifications() {
   });
 }
 
-// Show attack notification
+// Attack notification queue
+let attackNotificationQueue = [];
+let isShowingAttackNotification = false;
+
+// Show attack notification with queue management
 function showAttackNotification(message) {
+  attackNotificationQueue.push(message);
+  if (!isShowingAttackNotification) {
+    processAttackNotificationQueue();
+  }
+}
+
+function processAttackNotificationQueue() {
+  if (attackNotificationQueue.length === 0) {
+    isShowingAttackNotification = false;
+    return;
+  }
+  
+  isShowingAttackNotification = true;
+  const message = attackNotificationQueue.shift();
+  
+  // Play scary sound
+  playAttackSound();
+  
   const notification = document.createElement('div');
   Object.assign(notification.style, {
     position: 'fixed',
@@ -136,16 +158,24 @@ function showAttackNotification(message) {
     boxShadow: '0 8px 24px rgba(255,68,68,0.5)',
     zIndex: '1000',
     opacity: '0',
-    transition: 'opacity 0.3s'
+    transition: 'all 0.5s ease-out'
   });
   notification.textContent = message;
   document.body.appendChild(notification);
   
+  // Fade in
   setTimeout(() => notification.style.opacity = '1', 10);
+  
+  // After 2.5s: dissolve and move up
   setTimeout(() => {
     notification.style.opacity = '0';
-    setTimeout(() => notification.remove(), 300);
-  }, 5000);
+    notification.style.top = '30px';
+    setTimeout(() => {
+      notification.remove();
+      // Process next notification
+      processAttackNotificationQueue();
+    }, 500);
+  }, 2500);
 }
 
 // Vérifier si utilisateur connecté
@@ -270,6 +300,12 @@ spinner.addEventListener('click', async ()=>{
   spinner.classList.remove('sparkle');
   // add to user
   const added = addColorToUser(final);
+  // Check for auto-unlock zones
+  const unlockedZone = checkAutoUnlockZones();
+  if (unlockedZone) {
+    const zoneNames = {warm: 'COULEURS CHAUDES 🔥\nDÉBLOQUÉE!', cold: 'COULEURS FROIDES ❄️\nDÉBLOQUÉE!'};
+    playZoneUnlockAnimation(zoneNames[unlockedZone] || `${unlockedZone.toUpperCase()}\nDÉBLOQUÉE!`);
+  }
   // add coins (with booster + collection bonus)
   const multiplier = getCurrentMultiplier();
   const collectionBonus = 1 + (getCollection().length * 0.1); // +10% par couleur
@@ -349,6 +385,12 @@ if(megaBtn){
 
     // Award result with +30% coin bonus
     const added = addColorToUser(final);
+    // Check for auto-unlock zones
+    const unlockedZone = checkAutoUnlockZones();
+    if (unlockedZone) {
+      const zoneNames = {warm: 'COULEURS CHAUDES 🔥\nDÉBLOQUÉE!', cold: 'COULEURS FROIDES ❄️\nDÉBLOQUÉE!'};
+      playZoneUnlockAnimation(zoneNames[unlockedZone] || `${unlockedZone.toUpperCase()}\nDÉBLOQUÉE!`);
+    }
     const multiplier = getCurrentMultiplier();
     const collectionBonus = 1 + (getCollection().length * 0.1);
     const base = final.value || CONFIG.COIN_PER_COLOR;
@@ -461,6 +503,155 @@ function playGoldOrbSound(){
   o.frequency.exponentialRampToValueAtTime(1800, now + 0.08);
   g.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
   o.stop(now + 0.2);
+}
+
+// Scary attack sound - deep and ominous
+function playAttackSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.value = 55; // Deep bass note (A1)
+    o.connect(g); 
+    g.connect(ctx.destination);
+    g.gain.value = 0.001;
+    const now = ctx.currentTime;
+    o.start(now);
+    g.gain.exponentialRampToValueAtTime(0.15, now + 0.1);
+    o.frequency.exponentialRampToValueAtTime(40, now + 0.6); // Descend to even lower
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+    o.stop(now + 0.85);
+  }catch(e){}
+}
+
+// INSANE zone unlock animation - even crazier than new color!
+function playZoneUnlockAnimation(text){
+  const body = document.body;
+  const origBg = body.style.background;
+  
+  // MULTI-COLOR EXPLOSIVE FLASHES
+  const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FF69B4', '#00FF00'];
+  let flashCount = 0;
+  const flashInterval = setInterval(() => {
+    body.style.background = colors[flashCount % colors.length];
+    flashCount++;
+    if (flashCount >= 12) {
+      clearInterval(flashInterval);
+      body.style.transition = 'background 1s ease-out';
+      body.style.background = origBg;
+    }
+  }, 100);
+  
+  // MASSIVE PARTICLE EXPLOSION - 200 particles!
+  for(let i=0; i<200; i++){
+    setTimeout(() => {
+      const spark = document.createElement('div');
+      spark.style.position = 'fixed';
+      spark.style.pointerEvents = 'none';
+      spark.style.left = '50%';
+      spark.style.top = '50%';
+      spark.style.width = (8 + Math.random()*12) + 'px';
+      spark.style.height = spark.style.width;
+      spark.style.borderRadius = '50%';
+      spark.style.background = colors[Math.floor(Math.random()*colors.length)];
+      spark.style.boxShadow = `0 0 40px ${spark.style.background}`;
+      spark.style.zIndex = '9999';
+      document.body.appendChild(spark);
+      
+      const angle = (Math.PI*2)*(i/200) + (Math.random()-0.5)*1.2;
+      const distance = 300 + Math.random()*500;
+      const vx = Math.cos(angle)*distance;
+      const vy = Math.sin(angle)*distance;
+      const rotation = Math.random()*1440;
+      
+      spark.animate([
+        {transform:`translate(-50%, -50%) scale(2) rotate(0deg)`, opacity:1},
+        {transform:`translate(calc(-50% + ${vx}px), calc(-50% + ${vy}px)) scale(0) rotate(${rotation}deg)`, opacity:0}
+      ],{duration:800+Math.random()*600, easing:'cubic-bezier(.17,.89,.32,1.27)'}).onfinish = ()=>spark.remove();
+    }, i * 3); // Stagger particles
+  }
+  
+  // GIANT ANIMATED TEXT with crazy effects
+  const bigText = document.createElement('div');
+  bigText.style.position = 'fixed';
+  bigText.style.top = '50%';
+  bigText.style.left = '50%';
+  bigText.style.transform = 'translate(-50%, -50%)';
+  bigText.style.fontSize = '50px';
+  bigText.style.fontWeight = '900';
+  bigText.style.color = '#FFD700';
+  bigText.style.textShadow = `0 0 60px #FFD700, 0 0 120px #FFD700, 0 0 180px #FFD700`;
+  bigText.style.opacity = '0';
+  bigText.style.pointerEvents = 'none';
+  bigText.style.zIndex = '10000';
+  bigText.style.letterSpacing = '6px';
+  bigText.style.whiteSpace = 'pre-line';
+  bigText.style.textAlign = 'center';
+  bigText.style.textTransform = 'uppercase';
+  bigText.style.lineHeight = '1.2';
+  bigText.textContent = text;
+  document.body.appendChild(bigText);
+  
+  // Crazy animation: spin, scale, pulse
+  bigText.animate([
+    {opacity: 0, transform: 'translate(-50%, -50%) scale(0) rotate(-180deg)'},
+    {opacity: 1, transform: 'translate(-50%, -50%) scale(1.5) rotate(0deg)', offset: 0.2},
+    {opacity: 1, transform: 'translate(-50%, -50%) scale(1.2) rotate(5deg)', offset: 0.4},
+    {opacity: 1, transform: 'translate(-50%, -50%) scale(1.4) rotate(-5deg)', offset: 0.6},
+    {opacity: 1, transform: 'translate(-50%, -50%) scale(1.3) rotate(0deg)', offset: 0.8},
+    {opacity: 0, transform: 'translate(-50%, -50%) scale(0) rotate(180deg)'}
+  ], {
+    duration: 4000,
+    easing: 'cubic-bezier(.2,.8,.2,1)'
+  }).onfinish = () => bigText.remove();
+  
+  // Play epic sound
+  try{ playZoneUnlockSound(); }catch(e){}
+}
+
+// Epic zone unlock sound - CRAZY VERSION!
+function playZoneUnlockSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Multiple crazy ascending and descending patterns
+    const melodyNotes = [
+      261.63, 329.63, 392.00, 523.25, // C4, E4, G4, C5 - rising
+      587.33, 698.46, 783.99, 880.00, // D5, F5, G5, A5 - continue rising
+      1046.50, 880.00, 698.46, 523.25 // C6, A5, F5, C5 - descending finale
+    ];
+    
+    melodyNotes.forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = i % 3 === 0 ? 'square' : (i % 3 === 1 ? 'sawtooth' : 'sine'); // Vary waveforms
+      o.frequency.value = freq;
+      g.gain.value = 0.001;
+      o.connect(g); 
+      g.connect(ctx.destination);
+      const start = ctx.currentTime + i*0.08; // Faster rhythm
+      o.start(start);
+      g.gain.exponentialRampToValueAtTime(0.12, start + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
+      o.stop(start + 0.3);
+    });
+    
+    // Add bass pulse for power
+    for(let i=0; i<8; i++){
+      const bass = ctx.createOscillator();
+      const bassGain = ctx.createGain();
+      bass.type = 'sine';
+      bass.frequency.value = 65.41; // C2 - deep bass
+      bass.connect(bassGain);
+      bassGain.connect(ctx.destination);
+      const start = ctx.currentTime + i*0.3;
+      bass.start(start);
+      bassGain.gain.value = 0.001;
+      bassGain.gain.exponentialRampToValueAtTime(0.2, start + 0.05);
+      bassGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
+      bass.stop(start + 0.3);
+    }
+  }catch(e){}
 }
 
 // Display functions
@@ -645,13 +836,32 @@ document.addEventListener('keydown', (e)=>{
     const side = document.getElementById('sidePanel');
     if(side?.classList.contains('open')) togglePanel(false);
   }
+  
+  // Admin shortcuts - only for user "nathan" or "natha"
+  const user = getCurrentUser();
+  if(!user) return; // Not logged in
+  
+  // Get username from userSystem
+  import('./userSystem.js').then(module => {
+    // Can't access current directly, need to check through a different way
+  });
+  
+  // Check through localStorage
+  const currentData = localStorage.getItem(CONFIG.STORAGE_KEYS.CURRENT);
+  if(!currentData) return;
+  
+  const currentUser = JSON.parse(currentData);
+  const username = currentUser?.username?.toLowerCase();
+  const isNathan = username === 'nathan' || username === 'natha';
+  
+  if(!isNathan) return; // Block shortcuts for non-nathan users
+  
   if(e.key === 'p' || e.key === 'P'){
     addCoins(10000);
     updateCoinsDisplay();
     showCoinsFloat(10000);
   }
   if(e.key === 'm' || e.key === 'M'){
-    const user = getCurrentUser();
     if(!user) return;
     // Débloquer toutes les couleurs
     CONFIG.COLORS.forEach(color => {
@@ -670,6 +880,14 @@ document.addEventListener('keydown', (e)=>{
     alert('Toutes les couleurs débloquées !');
     setupPanelTabs();
   }
+  if(e.key === 'i' || e.key === 'I'){
+    // Test attack notification
+    showAttackNotification('⚔️ TestAttacker a détruit votre "Couleur Test" !');
+  }
+  if(e.key === 'k' || e.key === 'K'){
+    // Test zone unlock animation
+    playZoneUnlockAnimation('COULEURS CHAUDES 🔥\nDÉBLOQUÉE!');
+  }
 });
 
 // Check for attacks periodically
@@ -677,4 +895,3 @@ setInterval(checkAttackNotifications, 10000);
 
 // Ensure auth on load
 ensureAuth();
-

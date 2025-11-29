@@ -212,6 +212,36 @@ export function isZoneUnlocked(zone) {
   return (u.unlockedZones || []).includes(zone);
 }
 
+/** Check if all colors from a zone are collected */
+export function hasAllColorsFromZone(zone) {
+  const u = getCurrentUser(); if(!u) return false;
+  const zoneColors = CONFIG.COLORS.filter(c => c.zone === zone);
+  if (zoneColors.length === 0) return false;
+  return zoneColors.every(c => (u.collection || []).includes(c.id));
+}
+
+/** Auto-unlock next zone if previous zone is complete */
+export function checkAutoUnlockZones() {
+  const u = getCurrentUser(); if(!u) return;
+  if (!u.unlockedZones) u.unlockedZones = ['grays'];
+  
+  // Check grays -> warm
+  if (!u.unlockedZones.includes('warm') && hasAllColorsFromZone('grays')) {
+    u.unlockedZones.push('warm');
+    if(current) saveUserToFirebase(current.username, u);
+    return 'warm';
+  }
+  
+  // Check warm -> cold
+  if (!u.unlockedZones.includes('cold') && u.unlockedZones.includes('warm') && hasAllColorsFromZone('warm')) {
+    u.unlockedZones.push('cold');
+    if(current) saveUserToFirebase(current.username, u);
+    return 'cold';
+  }
+  
+  return null;
+}
+
 /** Unlock a zone (requires coins) */
 export function unlockZone(zone) {
   const u = getCurrentUser(); if(!u) return false;
@@ -240,13 +270,14 @@ export function getPFP() {
   return u.pfp || null;
 }
 
-/** Reset account (clear collection, coins, boosters, unlocked zones, but keep PFP) */
+/** Reset account (clear collection, coins, boosters, unlocked zones, attackCoins, but keep PFP) */
 export function resetAccount() {
   const u = getCurrentUser(); if(!u) return false;
   u.coins = 0;
   u.collection = [];
   u.boosters = [];
   u.unlockedZones = ['grays'];
+  u.attackCoins = 0;
   if(current) saveUserToFirebase(current.username, u);
   return true;
 }

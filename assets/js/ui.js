@@ -192,7 +192,9 @@ export function renderCollection(fullscreen = false){
     labelSpan.textContent = zoneLabels[zone] || zone;
     zoneHeader.appendChild(labelSpan);
     
-    if (!isUnlocked && zone !== 'grays') {
+    // Only show unlock button for zones that don't auto-unlock (warm and cold auto-unlock, others can be bought)
+    const autoUnlockZones = ['warm', 'cold'];
+    if (!isUnlocked && zone !== 'grays' && !autoUnlockZones.includes(zone)) {
       const unlockBtn = document.createElement('button');
       unlockBtn.className = 'zone-unlock-btn';
       unlockBtn.textContent = `Débloquer (${cost}💰)`;
@@ -411,19 +413,21 @@ export async function renderRanking(){
         attackBtn.style.opacity = '0.5';
         try{
           const result = await attackPlayer(rank.username);
-          // Find color name
-          const color = CONFIG.COLORS.find(c => c.id === result.stolenColorId);
-          const colorName = color ? color.name : result.stolenColorId;
-          alert(`⚔️ Attaque réussie ! Vous avez détruit "${colorName}" de ${rank.username} ! (Coût: ${result.attackCost} Robions)`);
-          // Update coins display
+          // Update coins display silently
           updateCoinsDisplay();
           // Refresh ranking
           renderRanking();
         }catch(e){
-          alert('❌ ' + e.message);
+          // Only show alert if not enough robions
+          if(e.message.includes('Pas assez de Robions')){
+            alert('❌ ' + e.message);
+          }
           attackBtn.disabled = false;
           attackBtn.style.opacity = '1';
         }
+        // Re-enable button immediately for spam attacks
+        attackBtn.disabled = false;
+        attackBtn.style.opacity = '1';
       });
       
       row.appendChild(attackBtn);

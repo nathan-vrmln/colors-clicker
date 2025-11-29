@@ -3,7 +3,7 @@
 // Chaque couleur aura exactement un prénom unique (pas de répétitions)
 
 export const MODERN_NAMES = [
-  'Mélanie', 'Grégor', 'Zoé', 'Yuri', 'Gunnar', 'Ananya', 'Asher', 'Francesca', 'Rayan', 'Vincenzo',
+  'James', 'Gregor', 'Zizi', 'Yuri', 'Gunnar', 'Ananya', 'Asher', 'Francesca', 'Rayan', 'Vincenzo',
   'Iris', 'Takeshi', 'Yasmine', 'Skye', 'Hana', 'Omar', 'Cora', 'Matthias', 'Noor', 'Blake',
   'Akira', 'Rose', 'Julien', 'Phoenix', 'Valeria', 'Isamu', 'Jade', 'Carlos', 'Aurora', 'Corentin',
   'Klaus', 'Anjali', 'Stella', 'Luis', 'Diya', 'Tariq', 'Rowan', 'Emilio', 'Amélie', 'Kai',
@@ -44,4 +44,3 @@ export function generateUniqueName(hex, index) {
 export function resetNameIndices() {
   usedIndices.clear();
 }
-
